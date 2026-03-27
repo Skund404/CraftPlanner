@@ -1,0 +1,55 @@
+/**
+ * CraftPlanner module frontend — registration entry point.
+ *
+ * Called by registerAllModules() in main.tsx before first render.
+ * Registers views, panels, and app mode for the standalone PM experience.
+ */
+import { registerView } from '@/modules/view-registry'
+import { registerPanel } from '@/modules/panel-registry'
+import { registerAppMode } from '@/modules/app-registry'
+
+import { DashboardView } from './views/DashboardView'
+import { ProjectsView } from './views/ProjectsView'
+import { ProjectDetailView } from './views/ProjectDetailView'
+import { EventsView } from './views/EventsView'
+import { SettingsView } from './views/SettingsView'
+import { CatalogueView } from './views/CatalogueView'
+
+import { ActiveProjectsPanel } from './components/ActiveProjectsPanel'
+import { UpcomingEventsPanel } from './components/UpcomingEventsPanel'
+
+export function registerCraftPlannerModule(): void {
+  // Views
+  registerView('/dashboard', DashboardView)
+  registerView('/projects', ProjectsView)
+  registerView('/projects/:id', ProjectDetailView)
+  registerView('/events', EventsView)
+  registerView('/settings', SettingsView)
+  registerView('/catalogue', CatalogueView)
+
+  // Panels
+  registerPanel('craftplanner-active-projects', ActiveProjectsPanel)
+  registerPanel('craftplanner-upcoming-events', UpcomingEventsPanel)
+
+  // App mode — always active, this IS the app
+  registerAppMode({
+    module_name: 'craftplanner',
+    title: 'CraftPlanner',
+    subtitle: 'Project Management',
+    sidebar_width: 200,
+    home_route: '/dashboard',
+    nav_items: [
+      { id: 'craftplanner-dashboard', label: 'Dashboard', icon: 'LayoutDashboard', route: '/dashboard' },
+      { id: 'craftplanner-projects', label: 'Projects', icon: 'FolderKanban', route: '/projects' },
+      { id: 'craftplanner-catalogue', label: 'Catalogue', icon: 'Library', route: '/catalogue' },
+      { id: 'craftplanner-events', label: 'Events', icon: 'Calendar', route: '/events' },
+      { id: 'craftplanner-settings', label: 'Settings', icon: 'Settings', route: '/settings' },
+    ],
+    theme: {
+      sidebar_bg: '#1a1410',
+      sidebar_text: '#e8ddd0',
+      sidebar_active_bg: 'rgba(212, 145, 92, 0.15)',
+      accent: '#d4915c',
+    },
+  })
+}

@@ -1,0 +1,217 @@
+{
+  "name": "craftplanner",
+  "display_name": "CraftPlanner",
+  "version": "0.1.0",
+  "description": "Domain-agnostic project management for makers — projects, cost tracking, time logging, events, and media.",
+  "author": "Skund404",
+  "license": "proprietary",
+  "shell_compatibility": ">=0.1.0",
+  "has_backend": true,
+  "has_frontend": true,
+  "keywords": [],
+  "api_endpoints": [
+    {
+      "method": "GET",
+      "path": "/projects",
+      "description": "List all projects with optional filters (status, search, tags)",
+      "name": "list_projects"
+    },
+    {
+      "method": "GET",
+      "path": "/projects/{id}",
+      "description": "Get full project details including items, progress, and budget summary",
+      "name": "get_project"
+    },
+    {
+      "method": "POST",
+      "path": "/projects",
+      "description": "Create a new project",
+      "name": "create_project"
+    },
+    {
+      "method": "PUT",
+      "path": "/projects/{id}",
+      "description": "Update an existing project",
+      "name": "update_project"
+    },
+    {
+      "method": "DELETE",
+      "path": "/projects/{id}",
+      "description": "Delete a project and all associated items",
+      "name": "delete_project"
+    },
+    {
+      "method": "GET",
+      "path": "/projects/{id}/progress",
+      "description": "Get roll-up completion, budget, and time stats for a project",
+      "name": "get_project_progress"
+    },
+    {
+      "method": "GET",
+      "path": "/projects/dashboard",
+      "description": "Overview stats across all projects",
+      "name": "get_dashboard"
+    },
+    {
+      "method": "GET",
+      "path": "/items",
+      "description": "List project items with filters (project_id, type, status)",
+      "name": "list_items"
+    },
+    {
+      "method": "POST",
+      "path": "/items",
+      "description": "Add an item (buy or make) to a project",
+      "name": "create_item"
+    },
+    {
+      "method": "PUT",
+      "path": "/items/{id}",
+      "description": "Update a project item",
+      "name": "update_item"
+    },
+    {
+      "method": "DELETE",
+      "path": "/items/{id}",
+      "description": "Remove an item from a project",
+      "name": "delete_item"
+    },
+    {
+      "method": "POST",
+      "path": "/items/{id}/log-time",
+      "description": "Log time spent on an item",
+      "name": "log_time"
+    },
+    {
+      "method": "GET",
+      "path": "/time-logs",
+      "description": "List time log entries with filters (item_id, project_id, date range)",
+      "name": "list_time_logs"
+    },
+    {
+      "method": "GET",
+      "path": "/events",
+      "description": "List events with filters (project_id, date range)",
+      "name": "list_events"
+    },
+    {
+      "method": "POST",
+      "path": "/events",
+      "description": "Create an event (occasion where a project was used/shown)",
+      "name": "create_event"
+    },
+    {
+      "method": "PUT",
+      "path": "/events/{id}",
+      "description": "Update an event",
+      "name": "update_event"
+    },
+    {
+      "method": "DELETE",
+      "path": "/events/{id}",
+      "description": "Delete an event",
+      "name": "delete_event"
+    },
+    {
+      "method": "GET",
+      "path": "/costs/{project_id}",
+      "description": "Get cost breakdown for a project (budget vs actual)",
+      "name": "get_costs"
+    },
+    {
+      "method": "POST",
+      "path": "/costs",
+      "description": "Add a cost entry to a project",
+      "name": "create_cost_entry"
+    },
+    {
+      "method": "GET",
+      "path": "/shopping-list/{project_id}",
+      "description": "Get items to buy for a project",
+      "name": "get_shopping_list"
+    }
+  ],
+  "views": [
+    {
+      "id": "craftplanner-projects",
+      "label": "Projects",
+      "route": "/projects",
+      "icon": "FolderKanban",
+      "sort_order": 0
+    },
+    {
+      "id": "craftplanner-project-detail",
+      "label": "Project",
+      "route": "/projects/:id",
+      "icon": "FolderKanban",
+      "sort_order": 1
+    },
+    {
+      "id": "craftplanner-events",
+      "label": "Events",
+      "route": "/events",
+      "icon": "Calendar",
+      "sort_order": 2
+    },
+    {
+      "id": "craftplanner-dashboard",
+      "label": "Dashboard",
+      "route": "/dashboard",
+      "icon": "LayoutDashboard",
+      "sort_order": -1
+    }
+  ],
+  "panels": [
+    {
+      "id": "craftplanner-active-projects",
+      "label": "Active Projects",
+      "size": "half"
+    },
+    {
+      "id": "craftplanner-upcoming-events",
+      "label": "Upcoming Events",
+      "size": "half"
+    },
+    {
+      "id": "craftplanner-budget-overview",
+      "label": "Budget Overview",
+      "size": "third"
+    },
+    {
+      "id": "craftplanner-recent-time",
+      "label": "Recent Time Logged",
+      "size": "third"
+    }
+  ],
+  "userdb_tables": [
+    { "name": "craftplanner_projects", "description": "Projects with budget, deadline, status, completion tracking" },
+    { "name": "craftplanner_items", "description": "Per-project elements (buy vs make) with cost and time" },
+    { "name": "craftplanner_time_logs", "description": "Time entries per item" },
+    { "name": "craftplanner_events", "description": "Occasions where a project was used/shown" },
+    { "name": "craftplanner_cost_entries", "description": "Budget allocations and actual spend per project" }
+  ],
+  "app_mode": {
+    "enabled": true,
+    "title": "CraftPlanner",
+    "subtitle": "Project Management",
+    "sidebar_width": 200,
+    "home_route": "/dashboard",
+    "nav_items": [
+      { "id": "craftplanner-dashboard", "label": "Dashboard", "icon": "LayoutDashboard", "route": "/dashboard" },
+      { "id": "craftplanner-projects", "label": "Projects", "icon": "FolderKanban", "route": "/projects" },
+      { "id": "craftplanner-catalogue", "label": "Catalogue", "icon": "Library", "route": "/catalogue" },
+      { "id": "craftplanner-events", "label": "Events", "icon": "Calendar", "route": "/events" },
+      { "id": "craftplanner-settings", "label": "Settings", "icon": "Settings", "route": "/settings" }
+    ],
+    "theme": {
+      "sidebar_bg": "#1a1410",
+      "sidebar_text": "#e8ddd0",
+      "sidebar_active_bg": "rgba(212, 145, 92, 0.15)",
+      "accent": "#d4915c"
+    }
+  },
+  "dependencies": {},
+  "peer_modules": {},
+  "core_api_permissions": ["read", "write"],
+  "config_defaults": {}
+}

@@ -1,0 +1,14 @@
+{
+  "name": "craftplanner-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CraftPlanner — Domain-agnostic project management for makers",
+  "scripts": {
+    "dev:frontend": "cd shell/frontend && npm run dev",
+    "build:frontend": "cd shell/frontend && npm run build",
+    "dev:shell": "cd shell && python3 -m uvicorn backend.app.main:app --port 3000 --reload",
+    "electron:start": "cd electron && npm start",
+    "electron:build:linux": "cd electron && npm run build:linux",
+    "electron:build:win": "cd electron && npm run build:win"
+  }
+}

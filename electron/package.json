@@ -1,0 +1,65 @@
+{
+  "name": "craftplanner",
+  "version": "0.1.0",
+  "description": "CraftPlanner — Project management for makers",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:linux": "electron-builder --linux AppImage deb",
+    "build:win": "electron-builder --win nsis",
+    "build:all": "electron-builder --linux AppImage deb --win nsis"
+  },
+  "build": {
+    "appId": "com.craftplanner.app",
+    "productName": "CraftPlanner",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json"
+    ],
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Utility",
+      "icon": "icons"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "icons/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "extraResources": [
+      {
+        "from": "../core/craftplanner-core",
+        "to": "core/craftplanner-core",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "../shell",
+        "to": "shell",
+        "filter": [
+          "backend/**/*",
+          "module/**/*",
+          "mcp_server/**/*",
+          "craftplanner_sdk/**/*",
+          "frontend/dist/**/*",
+          "pyproject.toml",
+          "!**/__pycache__",
+          "!**/*.pyc",
+          "!**/node_modules",
+          "!frontend/src",
+          "!frontend/node_modules"
+        ]
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}

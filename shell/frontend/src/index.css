@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+/* -----------------------------------------------------------------------
+   CraftPlanner CSS custom properties — Workshop Dark default theme
+   These are overridden at runtime by the theme loader (src/theme/loader.ts)
+   when a different theme is active.
+   ----------------------------------------------------------------------- */
+:root {
+  --cp-bg:              #1a1410;
+  --cp-bg-secondary:    #211c15;
+  --cp-surface:         #2a2218;
+  --cp-surface-el:      #332a1e;
+  --cp-accent:          #d4915c;
+  --cp-accent-dim:      rgba(212, 145, 92, 0.12);
+  --cp-accent-border:   rgba(212, 145, 92, 0.25);
+  --cp-secondary:       #7a9a6d;
+  --cp-text:            #e8ddd0;
+  --cp-text-muted:      #9a8b7a;
+  --cp-text-faint:      #5a4e42;
+  --cp-border:          #2a2218;
+  --cp-border-bright:   #3a3025;
+  --cp-success:         #7a9a6d;
+  --cp-warning:         #d4a23c;
+  --cp-danger:          #c45c4a;
+  --cp-radius:          0.5rem;
+}
+
+/* -----------------------------------------------------------------------
+   Tailwind v4 theme — maps our CSS vars to Tailwind utility classes
+   bg-bg, bg-surface, text-text, text-text-muted, text-accent, etc.
+   ----------------------------------------------------------------------- */
+@theme inline {
+  --color-bg:             var(--cp-bg);
+  --color-bg-secondary:   var(--cp-bg-secondary);
+  --color-surface:        var(--cp-surface);
+  --color-surface-el:     var(--cp-surface-el);
+  --color-accent:         var(--cp-accent);
+  --color-accent-dim:     var(--cp-accent-dim);
+  --color-accent-border:  var(--cp-accent-border);
+  --color-secondary:      var(--cp-secondary);
+  --color-text:           var(--cp-text);
+  --color-text-muted:     var(--cp-text-muted);
+  --color-text-faint:     var(--cp-text-faint);
+  --color-border:         var(--cp-border);
+  --color-border-bright:  var(--cp-border-bright);
+  --color-success:        var(--cp-success);
+  --color-warning:        var(--cp-warning);
+  --color-danger:         var(--cp-danger);
+
+  --font-sans: "Lexend", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --font-display: "Cormorant Garamond", Georgia, serif;
+
+  --radius: var(--cp-radius);
+}
+
+/* -----------------------------------------------------------------------
+   Base resets
+   ----------------------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--cp-bg);
+  color: var(--cp-text);
+  font-family: "Lexend", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--cp-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--cp-border-bright);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cp-text-faint);
+}
+
+/* Selection */
+::selection {
+  background: var(--cp-accent-dim);
+  color: var(--cp-accent);
+}
+
+/* Code/mono */
+code, pre, kbd {
+  font-family: "JetBrains Mono", monospace;
+}
+
+/* Links */
+a {
+  color: var(--cp-accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

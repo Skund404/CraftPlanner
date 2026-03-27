@@ -1,0 +1,1 @@
+# CraftPlanner Shell test suite
