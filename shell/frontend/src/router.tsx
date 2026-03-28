@@ -61,7 +61,7 @@ const rootRoute = createRootRoute({ component: Layout })
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  beforeLoad: () => { throw redirect({ to: '/dashboard' }) },
+  beforeLoad: () => { throw redirect({ to: '/dashboard' as string }) },
 })
 
 // ---------------------------------------------------------------------------

@@ -214,16 +214,14 @@ async def _run_module_migrations(module_dir: Path, db: UserDB) -> None:
 
     conn = db._require_connection()
 
-    # Ensure module_migrations table exists (Shell core migration creates it,
-    # but guard against edge cases).
+    # Ensure the inline module has a row in installed_modules so the FK
+    # on module_migrations is satisfied.
     await conn.execute(
-        "CREATE TABLE IF NOT EXISTS module_migrations ("
-        "  module_name TEXT NOT NULL, "
-        "  migration_id TEXT NOT NULL, "
-        "  applied_at TEXT NOT NULL, "
-        "  PRIMARY KEY (module_name, migration_id)"
-        ")"
+        "INSERT OR IGNORE INTO installed_modules (name, version, installed_at, enabled, package_path) "
+        "VALUES (?, '0.1.0', datetime('now'), 1, ?)",
+        (_MODULE_NAME, str(module_dir)),
     )
+    await conn.commit()
 
     cursor = await conn.execute(
         "SELECT migration_id FROM module_migrations WHERE module_name = ?",

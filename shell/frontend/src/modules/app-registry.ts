@@ -48,11 +48,22 @@ export function registerAppMode(config: AppModeConfig): void {
 /**
  * Resolve whether the given pathname falls under a registered app mode.
  * Returns the matching config or null if the path is a shell route.
+ *
+ * Matches against both the home_route and all nav_item routes so that
+ * top-level nav destinations (e.g. /projects, /events) stay in app mode
+ * even when they don't share a common prefix with home_route.
  */
 export function resolveAppMode(pathname: string): AppModeConfig | null {
   for (const config of _registry) {
+    // Check home route
     if (pathname === config.home_route || pathname.startsWith(config.home_route + '/')) {
       return config
+    }
+    // Check all nav item routes
+    for (const item of config.nav_items) {
+      if (pathname === item.route || pathname.startsWith(item.route + '/')) {
+        return config
+      }
     }
   }
   return null

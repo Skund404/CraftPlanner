@@ -50,6 +50,8 @@ class ProjectUpdate(BaseModel):
     completion_pct: Optional[float] = None
     tags: Optional[list[str]] = None
     primitive_path: Optional[str] = None
+    notes: Optional[str] = None
+    cover_image: Optional[str] = None
 
 
 class ItemCreate(BaseModel):
@@ -560,3 +562,79 @@ async def get_shopping_list(project_id: int, db=Depends(_get_db)):
         "items": items,
         "total_estimated": total,
     }
+
+
+@router.get("/shopping-list")
+async def get_global_shopping_list(db=Depends(_get_db)):
+    """Global shopping list across all active projects, grouped by project."""
+    rows = await db.fetch_all(
+        """SELECT i.*, p.name as project_name
+           FROM craftplanner_items i
+           JOIN craftplanner_projects p ON p.id = i.project_id
+           WHERE i.item_type = 'buy' AND i.status != 'completed'
+             AND p.status IN ('planning', 'active', 'paused')
+           ORDER BY p.name, i.sort_order, i.id"""
+    )
+    items = [_row_to_dict(r) for r in rows]
+
+    # Group by project
+    groups: dict = {}
+    for item in items:
+        pid = item["project_id"]
+        if pid not in groups:
+            groups[pid] = {
+                "project_id": pid,
+                "project_name": item["project_name"],
+                "items": [],
+                "total_estimated": 0.0,
+            }
+        groups[pid]["items"].append(item)
+        groups[pid]["total_estimated"] += item["estimated_cost"] or 0
+
+    grand_total = sum(g["total_estimated"] for g in groups.values())
+
+    return {
+        "groups": list(groups.values()),
+        "total_estimated": grand_total,
+    }
+
+
+@router.get("/dashboard/activity")
+async def get_dashboard_activity(
+    limit: int = Query(default=10, le=50),
+    db=Depends(_get_db),
+):
+    """Recent time logs and cost entries for the activity feed."""
+    time_rows = await db.fetch_all(
+        """SELECT tl.*, i.name as item_name, p.name as project_name
+           FROM craftplanner_time_logs tl
+           LEFT JOIN craftplanner_items i ON i.id = tl.item_id
+           JOIN craftplanner_projects p ON p.id = tl.project_id
+           ORDER BY tl.logged_at DESC
+           LIMIT ?""",
+        [limit],
+    )
+    cost_rows = await db.fetch_all(
+        """SELECT ce.*, p.name as project_name
+           FROM craftplanner_cost_entries ce
+           JOIN craftplanner_projects p ON p.id = ce.project_id
+           WHERE ce.is_estimate = 0
+           ORDER BY ce.created_at DESC
+           LIMIT ?""",
+        [limit],
+    )
+
+    activities = []
+    for r in time_rows:
+        d = _row_to_dict(r)
+        d["activity_type"] = "time_log"
+        d["activity_date"] = d["logged_at"]
+        activities.append(d)
+    for r in cost_rows:
+        d = _row_to_dict(r)
+        d["activity_type"] = "cost_entry"
+        d["activity_date"] = d["created_at"]
+        activities.append(d)
+
+    activities.sort(key=lambda x: x["activity_date"], reverse=True)
+    return activities[:limit]

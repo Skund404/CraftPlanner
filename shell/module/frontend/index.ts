@@ -14,18 +14,22 @@ import { ProjectDetailView } from './views/ProjectDetailView'
 import { EventsView } from './views/EventsView'
 import { SettingsView } from './views/SettingsView'
 import { CatalogueView } from './views/CatalogueView'
+import { ShoppingListView } from './views/ShoppingListView'
 
 import { ActiveProjectsPanel } from './components/ActiveProjectsPanel'
 import { UpcomingEventsPanel } from './components/UpcomingEventsPanel'
+import { CraftPlannerSidebar } from './components/CraftPlannerSidebar'
 
 export function registerCraftPlannerModule(): void {
   // Views
   registerView('/dashboard', DashboardView)
   registerView('/projects', ProjectsView)
   registerView('/projects/:id', ProjectDetailView)
+  registerView('/projects/:id/:tab', ProjectDetailView)
   registerView('/events', EventsView)
   registerView('/settings', SettingsView)
   registerView('/catalogue', CatalogueView)
+  registerView('/shopping-list', ShoppingListView)
 
   // Panels
   registerPanel('craftplanner-active-projects', ActiveProjectsPanel)
@@ -36,11 +40,12 @@ export function registerCraftPlannerModule(): void {
     module_name: 'craftplanner',
     title: 'CraftPlanner',
     subtitle: 'Project Management',
-    sidebar_width: 200,
+    sidebar_width: 240,
     home_route: '/dashboard',
     nav_items: [
       { id: 'craftplanner-dashboard', label: 'Dashboard', icon: 'LayoutDashboard', route: '/dashboard' },
       { id: 'craftplanner-projects', label: 'Projects', icon: 'FolderKanban', route: '/projects' },
+      { id: 'craftplanner-shopping-list', label: 'Shopping List', icon: 'ShoppingCart', route: '/shopping-list' },
       { id: 'craftplanner-catalogue', label: 'Catalogue', icon: 'Library', route: '/catalogue' },
       { id: 'craftplanner-events', label: 'Events', icon: 'Calendar', route: '/events' },
       { id: 'craftplanner-settings', label: 'Settings', icon: 'Settings', route: '/settings' },
@@ -51,5 +56,6 @@ export function registerCraftPlannerModule(): void {
       sidebar_active_bg: 'rgba(212, 145, 92, 0.15)',
       accent: '#d4915c',
     },
+    custom_sidebar: CraftPlannerSidebar,
   })
 }
