@@ -17,11 +17,28 @@ interface SelectProps {
   disabled?: boolean
 }
 
+/**
+ * Radix Select requires non-empty string values for Select.Item.
+ * We use a sentinel to represent the "empty" / "all" option internally.
+ */
+const EMPTY_SENTINEL = '__empty__'
+
 export function Select({ value, onValueChange, options, placeholder = 'Select…', label, className, disabled }: SelectProps) {
+  // Map empty-string values to sentinel for Radix compatibility
+  const mappedOptions = options.map(opt => ({
+    ...opt,
+    value: opt.value === '' ? EMPTY_SENTINEL : opt.value,
+  }))
+  const mappedValue = value === '' ? EMPTY_SENTINEL : value
+
+  function handleChange(v: string) {
+    onValueChange(v === EMPTY_SENTINEL ? '' : v)
+  }
+
   return (
     <div className="flex flex-col gap-1">
       {label && <span className="text-xs font-medium text-text-muted">{label}</span>}
-      <RadixSelect.Root value={value} onValueChange={onValueChange} disabled={disabled}>
+      <RadixSelect.Root value={mappedValue} onValueChange={handleChange} disabled={disabled}>
         <RadixSelect.Trigger
           className={cn(
             'inline-flex items-center justify-between gap-2',
@@ -45,7 +62,7 @@ export function Select({ value, onValueChange, options, placeholder = 'Select…
             sideOffset={4}
           >
             <RadixSelect.Viewport className="p-1">
-              {options.map((opt) => (
+              {mappedOptions.map((opt) => (
                 <RadixSelect.Item
                   key={opt.value}
                   value={opt.value}

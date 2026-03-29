@@ -4,11 +4,15 @@ All endpoints are mounted at /modules/craftplanner/ by the module loader.
 """
 
 import json
+import os
+import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, UploadFile, File, Form
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 router = APIRouter()
@@ -20,10 +24,9 @@ log = structlog.get_logger().bind(component="craftplanner")
 # ---------------------------------------------------------------------------
 
 
-def _get_db():
-    """Dependency placeholder — overridden by the module loader at mount time."""
-    from backend.app.dependencies import get_userdb
-    return get_userdb()
+async def _get_db(request: Request):
+    """Dependency — returns the UserDB from app state via FastAPI request."""
+    return request.app.state.userdb
 
 
 # ---------------------------------------------------------------------------
@@ -116,6 +119,29 @@ class CostEntryCreate(BaseModel):
     currency: str = "USD"
     is_estimate: bool = False
     receipt_ref: Optional[str] = None
+    supplier_id: Optional[int] = None
+
+
+class SupplierCreate(BaseModel):
+    name: str
+    website: str = ""
+    contact_email: str = ""
+    contact_phone: str = ""
+    address: str = ""
+    notes: str = ""
+    rating: Optional[int] = None
+    tags: list[str] = Field(default_factory=list)
+
+
+class SupplierUpdate(BaseModel):
+    name: Optional[str] = None
+    website: Optional[str] = None
+    contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+    rating: Optional[int] = None
+    tags: Optional[list[str]] = None
 
 
 # ---------------------------------------------------------------------------
@@ -508,7 +534,10 @@ async def delete_event(event_id: int, db=Depends(_get_db)):
 @router.get("/costs/{project_id}")
 async def get_costs(project_id: int, db=Depends(_get_db)):
     rows = await db.fetch_all(
-        "SELECT * FROM craftplanner_cost_entries WHERE project_id = ? ORDER BY created_at DESC",
+        """SELECT ce.*, s.name as supplier_name
+           FROM craftplanner_cost_entries ce
+           LEFT JOIN craftplanner_suppliers s ON s.id = ce.supplier_id
+           WHERE ce.project_id = ? ORDER BY ce.created_at DESC""",
         [project_id],
     )
     entries = [_row_to_dict(r) for r in rows]
@@ -528,12 +557,13 @@ async def get_costs(project_id: int, db=Depends(_get_db)):
 async def create_cost_entry(payload: CostEntryCreate, db=Depends(_get_db)):
     result = await db.execute(
         """INSERT INTO craftplanner_cost_entries
-           (project_id, item_id, category, description, amount, currency, is_estimate, receipt_ref, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+           (project_id, item_id, category, description, amount, currency, is_estimate, receipt_ref, supplier_id, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
         [
             payload.project_id, payload.item_id, payload.category,
             payload.description, payload.amount, payload.currency,
             1 if payload.is_estimate else 0, payload.receipt_ref,
+            payload.supplier_id,
             _now(),
         ],
     )
@@ -638,3 +668,285 @@ async def get_dashboard_activity(
 
     activities.sort(key=lambda x: x["activity_date"], reverse=True)
     return activities[:limit]
+
+
+@router.get("/dashboard/recent-items")
+async def get_recent_items(db=Depends(_get_db)):
+    """Recent items from active projects for the QuickLog widget."""
+    rows = await db.fetch_all(
+        """SELECT i.id, i.name, p.name as project_name
+           FROM craftplanner_items i
+           JOIN craftplanner_projects p ON p.id = i.project_id
+           WHERE p.status = 'active' AND i.status != 'completed'
+           ORDER BY i.updated_at DESC
+           LIMIT 20""",
+    )
+    return [_row_to_dict(r) for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# Suppliers
+# ---------------------------------------------------------------------------
+
+
+@router.get("/suppliers")
+async def list_suppliers(
+    search: Optional[str] = None,
+    tag: Optional[str] = None,
+    db=Depends(_get_db),
+):
+    clauses = []
+    params: list = []
+    if search:
+        clauses.append("(name LIKE ? OR notes LIKE ?)")
+        params.extend([f"%{search}%", f"%{search}%"])
+    if tag:
+        clauses.append("tags LIKE ?")
+        params.append(f'%"{tag}"%')
+
+    where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+    rows = await db.fetch_all(
+        f"SELECT * FROM craftplanner_suppliers{where} ORDER BY name",
+        params,
+    )
+    return [_parse_tags(_row_to_dict(r)) for r in rows]
+
+
+@router.get("/suppliers/{supplier_id}")
+async def get_supplier(supplier_id: int, db=Depends(_get_db)):
+    rows = await db.fetch_all(
+        "SELECT * FROM craftplanner_suppliers WHERE id = ?", [supplier_id]
+    )
+    if not rows:
+        raise HTTPException(404, detail="Supplier not found")
+    supplier = _parse_tags(_row_to_dict(rows[0]))
+
+    # Get linked items
+    item_rows = await db.fetch_all(
+        """SELECT i.id, i.name, i.project_id, p.name as project_name
+           FROM craftplanner_item_suppliers isl
+           JOIN craftplanner_items i ON i.id = isl.item_id
+           JOIN craftplanner_projects p ON p.id = i.project_id
+           WHERE isl.supplier_id = ?""",
+        [supplier_id],
+    )
+    supplier["items"] = [_row_to_dict(r) for r in item_rows]
+
+    # Get total spent
+    cost_rows = await db.fetch_all(
+        "SELECT SUM(amount) as total FROM craftplanner_cost_entries WHERE supplier_id = ? AND is_estimate = 0",
+        [supplier_id],
+    )
+    supplier["total_spent"] = cost_rows[0]["total"] if cost_rows and cost_rows[0]["total"] else 0
+
+    return supplier
+
+
+@router.post("/suppliers", status_code=201)
+async def create_supplier(payload: SupplierCreate, db=Depends(_get_db)):
+    now = _now()
+    result = await db.execute(
+        """INSERT INTO craftplanner_suppliers
+           (name, website, contact_email, contact_phone, address, notes, rating, tags, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        [
+            payload.name, payload.website, payload.contact_email,
+            payload.contact_phone, payload.address, payload.notes,
+            payload.rating, json.dumps(payload.tags),
+            now, now,
+        ],
+    )
+    supplier_id = result if isinstance(result, int) else result.lastrowid
+    log.info("supplier_created", id=supplier_id, name=payload.name)
+    return {"id": supplier_id, "name": payload.name}
+
+
+@router.put("/suppliers/{supplier_id}")
+async def update_supplier(supplier_id: int, payload: SupplierUpdate, db=Depends(_get_db)):
+    fields = []
+    params: list = []
+    data = payload.model_dump(exclude_none=True)
+    if "tags" in data:
+        data["tags"] = json.dumps(data["tags"])
+    for key, val in data.items():
+        fields.append(f"{key} = ?")
+        params.append(val)
+    if not fields:
+        raise HTTPException(400, detail="No fields to update")
+    fields.append("updated_at = ?")
+    params.append(_now())
+    params.append(supplier_id)
+    await db.execute(
+        f"UPDATE craftplanner_suppliers SET {', '.join(fields)} WHERE id = ?",
+        params,
+    )
+    return {"ok": True, "id": supplier_id}
+
+
+@router.delete("/suppliers/{supplier_id}")
+async def delete_supplier(supplier_id: int, db=Depends(_get_db)):
+    await db.execute("DELETE FROM craftplanner_suppliers WHERE id = ?", [supplier_id])
+    log.info("supplier_deleted", id=supplier_id)
+    return {"ok": True}
+
+
+@router.get("/projects/{project_id}/suppliers")
+async def get_project_suppliers(project_id: int, db=Depends(_get_db)):
+    """All suppliers used in a project — via item_suppliers or cost_entries."""
+    rows = await db.fetch_all(
+        """SELECT DISTINCT s.*
+           FROM craftplanner_suppliers s
+           WHERE s.id IN (
+               SELECT isl.supplier_id FROM craftplanner_item_suppliers isl
+               JOIN craftplanner_items i ON i.id = isl.item_id
+               WHERE i.project_id = ?
+           ) OR s.id IN (
+               SELECT ce.supplier_id FROM craftplanner_cost_entries ce
+               WHERE ce.project_id = ? AND ce.supplier_id IS NOT NULL
+           )""",
+        [project_id, project_id],
+    )
+    suppliers = [_parse_tags(_row_to_dict(r)) for r in rows]
+
+    # For each supplier, get items in this project and total spent
+    for sup in suppliers:
+        item_rows = await db.fetch_all(
+            """SELECT i.id, i.name FROM craftplanner_item_suppliers isl
+               JOIN craftplanner_items i ON i.id = isl.item_id
+               WHERE isl.supplier_id = ? AND i.project_id = ?""",
+            [sup["id"], project_id],
+        )
+        sup["project_items"] = [_row_to_dict(r) for r in item_rows]
+
+        cost_rows = await db.fetch_all(
+            "SELECT SUM(amount) as total FROM craftplanner_cost_entries WHERE supplier_id = ? AND project_id = ? AND is_estimate = 0",
+            [sup["id"], project_id],
+        )
+        sup["project_spent"] = cost_rows[0]["total"] if cost_rows and cost_rows[0]["total"] else 0
+
+    return suppliers
+
+
+# ---------------------------------------------------------------------------
+# Item–Supplier Linking
+# ---------------------------------------------------------------------------
+
+
+@router.get("/items/{item_id}/suppliers")
+async def get_item_suppliers(item_id: int, db=Depends(_get_db)):
+    rows = await db.fetch_all(
+        """SELECT s.* FROM craftplanner_suppliers s
+           JOIN craftplanner_item_suppliers isl ON isl.supplier_id = s.id
+           WHERE isl.item_id = ?""",
+        [item_id],
+    )
+    return [_parse_tags(_row_to_dict(r)) for r in rows]
+
+
+@router.post("/items/{item_id}/suppliers/{supplier_id}", status_code=201)
+async def link_item_supplier(item_id: int, supplier_id: int, db=Depends(_get_db)):
+    try:
+        await db.execute(
+            "INSERT INTO craftplanner_item_suppliers (item_id, supplier_id) VALUES (?, ?)",
+            [item_id, supplier_id],
+        )
+    except Exception:
+        raise HTTPException(409, detail="Link already exists")
+    return {"ok": True, "item_id": item_id, "supplier_id": supplier_id}
+
+
+@router.delete("/items/{item_id}/suppliers/{supplier_id}")
+async def unlink_item_supplier(item_id: int, supplier_id: int, db=Depends(_get_db)):
+    await db.execute(
+        "DELETE FROM craftplanner_item_suppliers WHERE item_id = ? AND supplier_id = ?",
+        [item_id, supplier_id],
+    )
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Photos
+# ---------------------------------------------------------------------------
+
+UPLOAD_DIR = Path(__file__).resolve().parent.parent / "uploads" / "photos"
+
+
+@router.post("/photos", status_code=201)
+async def upload_photo(
+    project_id: int = Form(...),
+    item_id: Optional[int] = Form(None),
+    caption: str = Form(""),
+    file: UploadFile = File(...),
+    db=Depends(_get_db),
+):
+    """Upload a photo and associate it with a project (and optionally an item)."""
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+    ext = Path(file.filename or "photo.jpg").suffix.lower()
+    if ext not in (".jpg", ".jpeg", ".png", ".gif", ".webp"):
+        raise HTTPException(400, detail="Unsupported image format")
+
+    filename = f"{uuid.uuid4().hex}{ext}"
+    filepath = UPLOAD_DIR / filename
+
+    content = await file.read()
+    if len(content) > 10 * 1024 * 1024:  # 10MB limit
+        raise HTTPException(400, detail="File too large (max 10MB)")
+
+    with open(filepath, "wb") as f:
+        f.write(content)
+
+    result = await db.execute(
+        """INSERT INTO craftplanner_photos
+           (project_id, item_id, caption, file_path, created_at)
+           VALUES (?, ?, ?, ?, ?)""",
+        [project_id, item_id, caption, filename, _now()],
+    )
+    photo_id = result if isinstance(result, int) else result.lastrowid
+    log.info("photo_uploaded", id=photo_id, project_id=project_id)
+    return {"id": photo_id, "project_id": project_id, "file_path": filename}
+
+
+@router.get("/photos")
+async def list_photos(
+    project_id: Optional[int] = None,
+    item_id: Optional[int] = None,
+    db=Depends(_get_db),
+):
+    clauses = []
+    params: list = []
+    if project_id is not None:
+        clauses.append("project_id = ?")
+        params.append(project_id)
+    if item_id is not None:
+        clauses.append("item_id = ?")
+        params.append(item_id)
+
+    where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+    rows = await db.fetch_all(
+        f"SELECT * FROM craftplanner_photos{where} ORDER BY created_at DESC",
+        params,
+    )
+    return [_row_to_dict(r) for r in rows]
+
+
+@router.delete("/photos/{photo_id}")
+async def delete_photo(photo_id: int, db=Depends(_get_db)):
+    rows = await db.fetch_all(
+        "SELECT file_path FROM craftplanner_photos WHERE id = ?", [photo_id]
+    )
+    if rows:
+        filepath = UPLOAD_DIR / rows[0]["file_path"]
+        if filepath.exists():
+            filepath.unlink()
+    await db.execute("DELETE FROM craftplanner_photos WHERE id = ?", [photo_id])
+    return {"ok": True}
+
+
+@router.get("/photos/file/{filename}")
+async def serve_photo(filename: str):
+    """Serve an uploaded photo file."""
+    filepath = UPLOAD_DIR / filename
+    if not filepath.exists():
+        raise HTTPException(404, detail="Photo not found")
+    return FileResponse(filepath)

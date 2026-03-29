@@ -10,11 +10,12 @@ import { registerAppMode } from '@/modules/app-registry'
 
 import { DashboardView } from './views/DashboardView'
 import { ProjectsView } from './views/ProjectsView'
-import { ProjectDetailView } from './views/ProjectDetailView'
+import { ProjectDetailView } from './views/project-detail'
 import { EventsView } from './views/EventsView'
 import { SettingsView } from './views/SettingsView'
 import { CatalogueView } from './views/CatalogueView'
 import { ShoppingListView } from './views/ShoppingListView'
+import { SuppliersView } from './views/SuppliersView'
 
 import { ActiveProjectsPanel } from './components/ActiveProjectsPanel'
 import { UpcomingEventsPanel } from './components/UpcomingEventsPanel'
@@ -30,6 +31,7 @@ export function registerCraftPlannerModule(): void {
   registerView('/settings', SettingsView)
   registerView('/catalogue', CatalogueView)
   registerView('/shopping-list', ShoppingListView)
+  registerView('/suppliers', SuppliersView)
 
   // Panels
   registerPanel('craftplanner-active-projects', ActiveProjectsPanel)
@@ -47,11 +49,12 @@ export function registerCraftPlannerModule(): void {
       { id: 'craftplanner-projects', label: 'Projects', icon: 'FolderKanban', route: '/projects' },
       { id: 'craftplanner-shopping-list', label: 'Shopping List', icon: 'ShoppingCart', route: '/shopping-list' },
       { id: 'craftplanner-catalogue', label: 'Catalogue', icon: 'Library', route: '/catalogue' },
+      { id: 'craftplanner-suppliers', label: 'Suppliers', icon: 'Store', route: '/suppliers' },
       { id: 'craftplanner-events', label: 'Events', icon: 'Calendar', route: '/events' },
       { id: 'craftplanner-settings', label: 'Settings', icon: 'Settings', route: '/settings' },
     ],
     theme: {
-      sidebar_bg: '#1a1410',
+      sidebar_bg: '#110e0a',
       sidebar_text: '#e8ddd0',
       sidebar_active_bg: 'rgba(212, 145, 92, 0.15)',
       accent: '#d4915c',

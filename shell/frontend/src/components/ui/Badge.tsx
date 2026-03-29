@@ -1,10 +1,12 @@
 import { cn } from '@/lib/utils'
 
 type BadgeVariant = 'default' | 'accent' | 'success' | 'warning' | 'danger' | 'muted' | 'purple'
+type BadgeSize = 'sm' | 'md'
 
 interface BadgeProps {
   children: React.ReactNode
   variant?: BadgeVariant
+  size?: BadgeSize
   className?: string
 }
 
@@ -18,12 +20,18 @@ const variantClasses: Record<BadgeVariant, string> = {
   purple:   'bg-purple/10 border-purple/25 text-purple',
 }
 
-export function Badge({ children, variant = 'default', className }: BadgeProps) {
+const sizeClasses: Record<BadgeSize, string> = {
+  sm: 'px-1.5 py-px text-[10px]',
+  md: 'px-2 py-0.5 text-xs',
+}
+
+export function Badge({ children, variant = 'default', size = 'md', className }: BadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded border',
+        'inline-flex items-center gap-1 font-medium rounded border',
         variantClasses[variant],
+        sizeClasses[size],
         className,
       )}
     >

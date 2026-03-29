@@ -23,7 +23,7 @@ export function Tabs({ tabs, value, onValueChange, children, className }: TabsPr
             key={tab.value}
             value={tab.value}
             className={cn(
-              'px-3 py-2 text-xs font-medium transition-colors cursor-pointer',
+              'px-2.5 py-1.5 text-[11px] font-medium transition-colors cursor-pointer',
               'border-b-2 border-transparent -mb-px',
               'text-text-muted hover:text-text',
               'data-[state=active]:text-accent data-[state=active]:border-accent',

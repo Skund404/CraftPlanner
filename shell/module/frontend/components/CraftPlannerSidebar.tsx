@@ -14,6 +14,7 @@ import {
   BookOpen,
   GitFork,
   Calendar,
+  Store,
   Settings,
 } from 'lucide-react'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
@@ -55,6 +56,10 @@ const CATALOGUE: NavEntry[] = [
   { id: 'workflows',  label: 'Workflows',  icon: <GitFork size={14} />,   route: '/catalogue', catalogueType: 'workflow' },
 ]
 
+const RESOURCES: NavEntry[] = [
+  { id: 'suppliers', label: 'Suppliers', icon: <Store size={14} />, route: '/suppliers' },
+]
+
 const OCCASIONS: NavEntry[] = [
   { id: 'events', label: 'Events', icon: <Calendar size={14} />, route: '/events' },
 ]
@@ -82,7 +87,7 @@ function NavItem({ entry }: { entry: NavEntry }) {
     <Link to={to as never} className="block">
       <span
         className={cn(
-          'flex items-center gap-2.5 px-3 py-2 rounded-md text-xs transition-colors w-full',
+          'flex items-center gap-2.5 px-3 py-1.5 rounded-md text-[11px] transition-colors w-full',
         )}
         style={{
           backgroundColor: isActive ? 'rgba(212,145,92,0.15)' : 'transparent',
@@ -196,6 +201,13 @@ export function CraftPlannerSidebar({ config }: CraftPlannerSidebarProps) {
           ))}
         </div>
 
+        <SectionLabel>Resources</SectionLabel>
+        <div className="space-y-0.5">
+          {RESOURCES.map((entry) => (
+            <NavItem key={entry.id} entry={entry} />
+          ))}
+        </div>
+
         <SectionLabel>Occasions</SectionLabel>
         <div className="space-y-0.5">
           {OCCASIONS.map((entry) => (
@@ -211,7 +223,7 @@ export function CraftPlannerSidebar({ config }: CraftPlannerSidebarProps) {
       <div className="px-1.5 pb-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
         <Link to={'/settings' as never} className="block mt-1.5">
           <span
-            className="flex items-center gap-2.5 px-3 py-2 rounded-md text-xs transition-colors w-full"
+            className="flex items-center gap-2.5 px-3 py-1.5 rounded-md text-[11px] transition-colors w-full"
             style={{ color: 'rgba(255,255,255,0.45)' }}
           >
             <Settings size={14} />

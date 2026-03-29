@@ -6,12 +6,15 @@
    when a different theme is active.
    ----------------------------------------------------------------------- */
 :root {
-  --cp-bg:              #1a1410;
-  --cp-bg-secondary:    #211c15;
-  --cp-surface:         #2a2218;
+  --cp-bg:              #110e0a;
+  --cp-bg-secondary:    #181410;
+  --cp-surface:         #1f1a13;
   --cp-surface-el:      #332a1e;
+  --cp-surface-hover:   #2a2318;
   --cp-accent:          #d4915c;
+  --cp-accent-hover:    #e0a06a;
   --cp-accent-dim:      rgba(212, 145, 92, 0.12);
+  --cp-accent-muted:    rgba(212, 145, 92, 0.06);
   --cp-accent-border:   rgba(212, 145, 92, 0.25);
   --cp-secondary:       #7a9a6d;
   --cp-text:            #e8ddd0;
@@ -34,8 +37,11 @@
   --color-bg-secondary:   var(--cp-bg-secondary);
   --color-surface:        var(--cp-surface);
   --color-surface-el:     var(--cp-surface-el);
+  --color-surface-hover:  var(--cp-surface-hover);
   --color-accent:         var(--cp-accent);
+  --color-accent-hover:   var(--cp-accent-hover);
   --color-accent-dim:     var(--cp-accent-dim);
+  --color-accent-muted:   var(--cp-accent-muted);
   --color-accent-border:  var(--cp-accent-border);
   --color-secondary:      var(--cp-secondary);
   --color-text:           var(--cp-text);
@@ -71,16 +77,16 @@ body {
   background-color: var(--cp-bg);
   color: var(--cp-text);
   font-family: "Lexend", system-ui, sans-serif;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: var(--cp-bg);
@@ -111,6 +117,17 @@ a {
 }
 a:hover {
   text-decoration: underline;
+}
+
+/* -----------------------------------------------------------------------
+   Utility classes
+   ----------------------------------------------------------------------- */
+.text-label {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--cp-text-faint);
 }
 
 /* Reduced motion */

@@ -77,3 +77,11 @@ export async function apiDelete(path: string): Promise<void> {
     throw new ApiError(res.status, `HTTP ${res.status}`, detail)
   }
 }
+
+export async function apiUpload<T>(path: string, formData: FormData): Promise<T> {
+  const res = await fetch(path, {
+    method: 'POST',
+    body: formData,
+  })
+  return handleResponse<T>(res)
+}
